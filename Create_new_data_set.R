@@ -12,6 +12,7 @@ str(MyDataFrame)
 #Add another column to the data.frame
 Language<-c("Norwegian","Russian","Spanish","Dutch")
 MyDataFrame$Language<-Language
+View(MyDataFrame)
 MyDataFrame$Numbers1<-(c(2,3,4,5))
 MyDataFrame$Numbers2<-(c(6,13,14,25))
 #MyDataFrame$NumbersMult<-
