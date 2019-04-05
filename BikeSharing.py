@@ -15,15 +15,21 @@ import matplotlib.pyplot as plt
 import matplotlib
 import seaborn as sb #used for more sophisticated visualisations
 
-""" matplotlib setup """
+from sklearn.cross_validation import KFold   #For K-fold cross validation
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
+from sklearn import metrics
 
+""" matplotlib setup """
+#%matplotlib inline
+#%pylab inline
 matplotlib.matplotlib_fname()
 import matplotlib.rcsetup as rcsetup
 print(rcsetup.all_backends)
 matplotlib.get_backend()
-plt.switch_backend('qt5agg')
-matplotlib.use('agg')
-matplotlib.use('cairo.png')
+plt.switch_backend('nbAgg')
+matplotlib.use('Qt5Agg')
+
 
 """ Import dataset """
 
@@ -67,6 +73,7 @@ BikeShare.duplicated().any()
 """ Check for Outliers """
 
 sb.boxplot(y = BikeShare['cnt'])
+BikeShare.boxplot(column = 'cnt')
 plt.show()
 
 #By looking at the stats of the 'describe ()' function the upper outlier limit has been determined to be 643
@@ -75,9 +82,15 @@ plt.show()
 
 #Manually take out the outliers, as there is no such function
 
+# Equivalent to the R which function: df[df['columnname'] = condition].index
+#y = BikeShare[BikeShare['cnt'] > 643].index
 BikeShare = BikeShare[BikeShare['cnt'] < 643]
 #This version only yields an array
 #np.where(BikeShare['cnt'] < 643)
+
+#Count a variable by its different features
+Hours = pd.DataFrame(BikeShare.hour.value_counts())
+Hours = Hours.sort_index()
 
 #Convert the temperatures back to standard temperatures
 BikeShare['temp'] = BikeShare['temp'] * 39
@@ -118,31 +131,71 @@ Weather_Bikes = BikeShare.groupby('Weather',as_index = False).agg({'cnt':np.mean
 
 Weather_Bikes = Weather_Bikes.round(1)
 
+Season_Bikes = BikeShare.groupby("season",as_index =False).agg({'cnt':np.mean,
+                                                                'casual':np.mean,
+                                                                'registered':np.mean,
+                                                                'hum':np.mean})
+
+Hours_df = BikeShare.groupby(['hour'], as_index = False).agg({'cnt':np.mean})
+
+#Plot of bike use per hour of the day
+plt.title("Use of bikes during the day")
+plt.xlabel("Time of the day")
+plt.ylabel("Average use")
+plt.bar(Hours_df['hour'],Hours_df['cnt'],color = "orange")
+
+Season_Bikes = Season_Bikes.round(1)
+
 #Plot Bars
+
+plt.title("Average cycles rented per weather type")
+plt.ylabel("Average use")
 plt.bar(Weather_Bikes['Weather'],Weather_Bikes['cnt'], color = 'yellow')
 
-#Plot Stacked Bars
+#Alternative plot
+#Weather_Bikes.cnt.plot(kind ="bar")
+
+plt.bar(Weather_Bikes['Weather'],Weather_Bikes['casual'], color = 'yellow')
+plt.bar(Weather_Bikes['Weather'],Weather_Bikes['registered'], color = 'blue')
+
+#Plot Stacked Bars!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Bars1 = Weather_Bikes['casual']
 Bars2 = Weather_Bikes['registered']
 Bars = np.add(Weather_Bikes['casual'],Weather_Bikes['registered']).tolist()
 
-plt.bar(Weather_Bikes['Weather'],Bars1, color = 'yellow')
-plt.bar(Weather_Bikes['Weather'],Bars2,bottom = Bars1, color = 'orange')
+p1 = plt.bar(Weather_Bikes['Weather'],Bars1, color = 'yellow')
+p2 = plt.bar(Weather_Bikes['Weather'],Bars2,bottom = Bars1, color = 'orange')
+plt.title("User allocation depending on weather")
+plt.xlabel("Weather situation")
+plt.ylabel("Average count")
+plt.legend((p1[0], p2[0]), ('Casual users', 'Registered users'))
 plt.show()
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Weather_Bikes1 = pd.melt(Weather_Bikes,id_vars='Weather',value_vars=['casual','registered'])
+
+Stacked_temp = pd.crosstab(Weather_Bikes1['Weather'],Weather_Bikes['variable'])
+
+""" Get Correlation among data """
+Cordat = BikeShare.corr()
+#Correlation Matrix
+Cordat.style.background_gradient(cmap='coolwarm')
 
 #drop (delete) a column by name
 #BikeShare = BikeShare.drop('Weather', axis=1)
 #BikeShare.drop('Weather',axis=1, inplace= True)
-BikeShare = BikeShare.drop(columns = "Weather")
+#BikeShare = BikeShare.drop(columns = "Weather")
 
 #Analyse the average bike rental depending on the weather situation
-Weathersit = BikeShare.groupby(['weathersit']).aggregate(np.mean)
+#Weathersit = BikeShare.groupby(['weathersit']).aggregate(np.mean)
+#Weathersit = Weathersit.drop
 
+BikeShare.drop(["holiday","workingday","instant","windspeed","year"], 1, inplace=True)
+#del BikeShare["holiday","workingday","instant","windspeed","yr","atemp","hum"]
 
+''' Create and run models '''
 
 
 
 #Export to CSV
 BikeShare.to_csv("C:/Users/AlexanderWinkler/Desktop/Github/Ubqm0318-master/BikeShareResult.csv", index=False, encoding='utf8')
-
-#melt, cast, merge
