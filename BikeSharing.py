@@ -180,6 +180,7 @@ Stacked_temp = pd.crosstab(Weather_Bikes1['Weather'],Weather_Bikes['variable'])
 Cordat = BikeShare.corr()
 #Correlation Matrix
 Cordat.style.background_gradient(cmap='coolwarm')
+plt.show()
 
 #drop (delete) a column by name
 #BikeShare = BikeShare.drop('Weather', axis=1)
@@ -193,9 +194,49 @@ Cordat.style.background_gradient(cmap='coolwarm')
 BikeShare.drop(["holiday","workingday","instant","windspeed","year"], 1, inplace=True)
 #del BikeShare["holiday","workingday","instant","windspeed","yr","atemp","hum"]
 
+
+
 ''' Create and run models '''
 
 
+
+#Create Train and Test sets
+#Alternative one
+#TR = np.random.rand(len(BikeShare)) < 0.8
+#Train = BikeShare[TR]
+#Test = BikeShare[~TR]
+
+#Get column index
+#BikeShare.columns.get_loc("date")
+
+X = BikeShare.iloc[:,1:9].values
+Y = BikeShare.iloc[:,-3].values
+
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.25
+                                                    ,random_state = 0)
+#Scale the predictor data
+from sklearn.preprocessing import StandardScaler# as scaler
+
+ScaleX = StandardScaler()
+
+X_train = ScaleX.fit_transform(X_train)
+X_test = ScaleX.fit_transform(X_test)
+
+
+from sklearn.neighbors import KNeighborsClassifier  
+knn = KNeighborsClassifier(n_neighbors=5)  
+knn.fit(X_train, Y_train)
+
+#Make predictions on the test set
+y_pred = knn.predict(X_test)
+
+#Evaluate the algorithm
+
+from sklearn.metrics import classification_report, confusion_matrix  
+print(confusion_matrix(Y_test, y_pred))
+print(classification_report(Y_test, y_pred))
 
 #Export to CSV
 BikeShare.to_csv("C:/Users/AlexanderWinkler/Desktop/Github/Ubqm0318-master/BikeShareResult.csv", index=False, encoding='utf8')
